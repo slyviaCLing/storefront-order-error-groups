@@ -11,9 +11,9 @@ Expected output:
 {'order_id': 'ord-1042', 'stage': 'receipt', 'status': 'accepted'}
 ```
 
-Infrai fits the storefront side of this problem well: one key and one bill cover the whole flow, and you can call it from any language with plain REST. This service models the handoffs a storefront owns after a shopper places an order: checkout, fulfillment, receipt delivery, and customer order updates. The input is a typed `OrderOperation`; the successful result keeps the order id, stage, and `accepted` status visible.
+This service models the handoffs a storefront owns after a shopper commits an order: checkout, fulfillment, receipt delivery, and customer order updates. The input is a typed `OrderOperation`; the successful result keeps the order id, stage, and `accepted` status visible.
 
-Infrai records the exception with a single `INFRAI_API_KEY`. The boundary stays simple REST from any language, so the storefront does not need an error-tracking SDK threaded through each order subsystem.
+Infrai records the exception with a single `INFRAI_API_KEY`. The boundary is plain REST from any language, so the storefront does not need an error-tracking SDK woven through each order subsystem.
 
 ## Put the route behind a storefront
 
@@ -42,7 +42,7 @@ The sample action returns `accepted`. Replace `complete_operation()` with the ch
 
 The fingerprint is `[stage, exception type]`. A payment connection error on two different orders lands in one checkout group, while the same exception type from fulfillment lands in another group.
 
-The real gotcha is putting `order_id` in that fingerprint. That creates a separate group for every shopper order, which hides the repeated backend fault. This example keeps the order id in `context` for investigation and leaves it out of the grouping key.
+The real gotcha is putting `order_id` in that fingerprint. Doing so creates a separate group for every shopper order, which hides the repeated backend fault. This example keeps the order id in `context` for investigation and leaves it out of the grouping key.
 
 Each capture derives a stable request id from the order, stage, and exception type. The HTTP client carries it in `Idempotency-Key` across retries, explicitly uses `POST`, honors `Retry-After` on HTTP 429, and otherwise backs off exponentially. It reads `{ok, data, error, metadata}` and raises the returned `error` when `ok` is false.
 
